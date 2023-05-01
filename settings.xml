@@ -1,0 +1,110 @@
+<settings>
+	<servers>
+		<server>
+			<id>anypoint-exchange-v2-publish</id>
+			<username>~~~Token~~~</username>
+			<password>${CA_TOKEN}</password>
+		</server>
+		<server>
+			<id>MuleRepository-ee</id>
+			<username>nexus</username>
+			<password>${nexus_password}</password>
+		</server>
+		<!-- jfrog maven artifactory on aws -->
+		<server>
+			<username>mulesoft-svc-act</username>
+			<password>${jfrog.password}</password>
+			<id>jcentral</id>
+		</server>
+		<server>
+			<username>mulesoft-svc-act</username>
+			<password>${jfrog.password}</password>
+			<id>jsnapshots</id>
+		</server>
+	</servers>
+	
+	<activeProfiles>
+		<activeProfile>aws-profile</activeProfile>
+	</activeProfiles>
+	
+	<profiles>
+		<profile>
+			<id>aws-profile</id>
+			<repositories>
+				<repository>
+					<id>central</id>
+					<url>https://repo.maven.apache.org/maven2/</url>
+					<releases>
+						<enabled>true</enabled>
+					</releases>
+				</repository>
+				<repository>
+					<id>MuleRepository-ee</id>
+					<name>MuleRepository Nexus</name>
+					<url>https://repository.mulesoft.org/nexus-ee/content/repositories/releases-ee/
+					</url>
+					<layout>default</layout>
+					<releases>
+						<enabled>true</enabled>
+					</releases>
+					<snapshots>
+						<enabled>true</enabled>
+					</snapshots>
+				</repository>
+
+				<repository>
+					<snapshots>
+						<enabled>false</enabled>
+					</snapshots>
+					<id>jcentral</id>
+					<name>mulesoft-maven-virtual</name>
+          			<url>https://jfrog.io.com/artifactory/mulesoft-maven-virtual</url>
+				</repository>
+				<repository>
+					<snapshots />
+					<id>jsnapshots</id>
+					<name>mulesoft-maven-virtual</name>
+          			<url>https://jfrog.io.com/artifactory/mulesoft-maven-virtual</url>
+				</repository>
+			</repositories>
+
+			<pluginRepositories>
+				<pluginRepository>
+					<id>MuleRepository-ee</id>
+					<name>MuleRepository Nexus</name>
+					<url>https://repository.mulesoft.org/nexus-ee/content/repositories/releases-ee/</url>
+					<layout>default</layout>
+					<releases>
+						<enabled>true</enabled>
+					</releases>
+					<snapshots>
+						<enabled>true</enabled>
+					</snapshots>
+				</pluginRepository>
+				<pluginRepository>
+					<id>central</id>
+					<url>https://repo.maven.apache.org/maven2/</url>
+					<releases>
+						<enabled>true</enabled>
+					</releases>
+				</pluginRepository>
+
+				<pluginRepository>
+					<snapshots>
+						<enabled>false</enabled>
+					</snapshots>
+					<id>jcentral</id>
+					<name>mulesoft-maven-virtual</name>
+          			<url>https://jfrog.io.com/artifactory/mulesoft-maven-virtual</url>
+				</pluginRepository>
+				<pluginRepository>
+					<snapshots />
+					<id>jsnapshots</id>
+					<name>mulesoft-maven-virtual</name>
+          			<url>https://jfrog.io.com/artifactory/mulesoft-maven-virtual</url>
+				</pluginRepository>
+			</pluginRepositories>
+
+		</profile>
+	</profiles>
+</settings>

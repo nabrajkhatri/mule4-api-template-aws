@@ -1,0 +1,47 @@
+version: 0.2
+
+env:
+  variables:
+    ENV: "qa"
+  secrets-manager:
+    CLIENT_ID: $SECRET_ARN:client_id
+    CLIENT_SECRET: $SECRET_ARN:client_secret
+    AP_CLIENT_ID: $SECRET_ARN:ap_client_id
+    AP_CLIENT_SECRET: $SECRET_ARN:ap_client_secret
+    JFROG_TOKEN: $SECRET_ARN:jfrog_token
+
+phases:
+  install:
+    runtime-versions:
+      java: openjdk11
+    commands:
+      - cp ./settings.xml /root/.m2/settings.xml
+    # settings xml can also be referenced from current dir without copying
+    
+  # Retrieve the mule application jar for the specified version and parent-pom from artifactory
+  pre_build:
+    on-failure: ABORT
+    commands:
+      - JFROG_REPO_PATH=$JFROG_HOST/$PROJECT_GROUP/$PROJECT_NAME
+      - MULE_APPLICATION=$PROJECT_NAME-$PROJECT_VERSION-mule-application.jar
+      - echo invoking jfrog repo $JFROG_REPO_PATH/$PROJECT_VERSION/$MULE_APPLICATION
+      - curl -u mulesoft-svc-act:"$JFROG_TOKEN" -L -X GET $JFROG_REPO_PATH/$PROJECT_VERSION/$MULE_APPLICATION -o $MULE_APPLICATION
+      - |
+        if [ $? -ne 0 ]; then 
+          echo "ERROR RETRIEVING MULE APP JAR " $MULE_APPLICATION " from Jfrog.. Aborting"
+          exit 1
+        fi
+      - echo getting parent pom $JFROG_REPO_PATH/parent-pom.xml
+      - curl -u mulesoft-svc-act:"$JFROG_TOKEN" -L -X GET $JFROG_REPO_PATH/parent-pom.xml -o parent-pom.xml
+      - |
+        if [ $? -ne 0 ]; then 
+          echo "ERROR RETRIEVING PARENT POM from Jfrog.. Aborting"
+          exit 1
+        fi
+  
+  # deploy the retrieved mule app jar file into target environment using the cloudhub build profile in parent-pom      
+  build:
+    on-failure: ABORT
+    commands:
+      - echo Deploying Mule app jar $MULE_APPLICATION into CloudHub $MULE_ENVIRONMENT in $ORG_NAME
+      - mvn mule:deploy -Dmule.artifact=$MULE_APPLICATION -Dclient.id=$CLIENT_ID -Dclient.secret=$CLIENT_SECRET -Denv=$ENV -Dmule.businessGroup="$ORG_NAME" -Danypoint.platform.client.id=$AP_CLIENT_ID -Danypoint.platform.client.secret=$AP_CLIENT_SECRET -Dmule.environment=$MULE_ENVIRONMENT

@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.mule</groupId>
+    <artifactId>parent-pom</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+
+    <name>parent-pom</name>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <app.runtime>4.3.0</app.runtime>
+        <mule.maven.plugin.version>3.4.2</mule.maven.plugin.version>
+        <mule.applicationName>${project.artifactId}</mule.applicationName>
+        <mule.region>${region}</mule.region>
+        <mule.environment>${environment}</mule.environment>
+        <munit.version>2.3.2</munit.version>
+        <mule.apikit.module.version>1.3.18</mule.apikit.module.version>
+		<mule.secure.config.version>1.2.3</mule.secure.config.version>
+
+        <mule.http.connector.version>1.5.24</mule.http.connector.version>
+        <munit.runner.version>2.3.2</munit.runner.version>
+        <env>dev</env>
+
+        <api.layer.exp>Experience</api.layer.exp>
+		<api.layer.prc>Process</api.layer.prc>
+		<api.layer.sys>System</api.layer.sys>
+    </properties>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-clean-plugin</artifactId>
+                    <version>3.0.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.mule.tools.maven</groupId>
+                    <artifactId>mule-maven-plugin</artifactId>
+                    <version>${mule.maven.plugin.version}</version>
+                    <extensions>true</extensions>
+                    <configuration>
+                        <cloudHubDeployment>
+                            <applicationName>${mule.applicationName}</applicationName>
+                            <uri>${anypoint.url}</uri>
+                            <region>${mule.region}</region>
+                            <muleVersion>${app.runtime}</muleVersion>
+                            <environment>${mule.environment}</environment>
+                            <businessGroup>${mule.businessGroup}</businessGroup>
+                            <connectedAppClientId>${client.id}</connectedAppClientId>
+                            <connectedAppClientSecret>${client.secret}</connectedAppClientSecret>
+                            <connectedAppGrantType>client_credentials</connectedAppGrantType>
+                            <workers>${workers}</workers>
+                            <workerType>${worker.type}</workerType>
+                            <objectStoreV2>true</objectStoreV2>
+
+                            <properties>
+                                <env>${env}</env>
+                                <!-- <mule.encryptionKey>${mule.encryptionKey}</mule.encryptionKey> -->
+                                <anypoint.platform.client_id>${anypoint.platform.client.id}</anypoint.platform.client_id>
+                                <anypoint.platform.client_secret>${anypoint.platform.client.secret}</anypoint.platform.client_secret>
+                                <anypoint.platform.config.analytics.agent.enabled>true</anypoint.platform.config.analytics.agent.enabled>
+                                <anypoint.platform.visualizer.layer>${api.layer}</anypoint.platform.visualizer.layer>
+                            </properties>
+                        </cloudHubDeployment>
+                        <classifier>mule-application</classifier>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>com.mulesoft.munit.tools</groupId>
+                    <artifactId>munit-maven-plugin</artifactId>
+                    <version>${munit.version}</version>
+                    <executions>
+                        <execution>
+                            <id>test</id>
+                            <phase>test</phase>
+                            <goals>
+                                <goal>test</goal>
+                                <goal>coverage-report</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <coverage>
+                            <runCoverage>true</runCoverage>
+                            <requiredApplicationCoverage>80</requiredApplicationCoverage>
+                            <failBuild>true</failBuild>
+                            <formats>
+                                <format>json</format>
+                            </formats>
+                            <ignoreFlows>
+                                <ignoreFlow>global.xml</ignoreFlow>
+                            </ignoreFlows>
+                        </coverage>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.mule.connectors</groupId>
+                <artifactId>mule-http-connector</artifactId>
+                <version>${mule.http.connector.version}</version>
+                <classifier>mule-plugin</classifier>
+            </dependency>
+            <dependency>
+                <groupId>com.mulesoft.munit</groupId>
+                <artifactId>munit-runner</artifactId>
+                <version>${munit.runner.version}</version>
+                <classifier>mule-plugin</classifier>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.mulesoft.munit</groupId>
+                <artifactId>munit-tools</artifactId>
+                <version>${munit.version}</version>
+                <classifier>mule-plugin</classifier>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <repositories>
+        <repository>
+            <id>anypoint-exchange-v2</id>
+            <name>Anypoint Exchange</name>
+            <url>https://maven.anypoint.mulesoft.com/api/v2/maven</url>
+            <layout>default</layout>
+        </repository>
+        <repository>
+            <id>mulesoft-releases</id>
+            <name>MuleSoft Releases Repository</name>
+            <url>https://repository.mulesoft.org/releases/</url>
+            <layout>default</layout>
+        </repository>
+    </repositories>
+    
+    <pluginRepositories>
+        <pluginRepository>
+            <id>mulesoft-releases</id>
+            <name>mulesoft release repository</name>
+            <layout>default</layout>
+            <url>https://repository.mulesoft.org/releases/</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
+
+    <distributionManagement>
+        <repository>
+            <id>jcentral</id>
+            <name>mulesoft-maven-virtual</name>
+            <url>https://jfrog.io.com/artifactory/mulesoft-maven-local</url>
+        </repository>
+	</distributionManagement>
+
+</project>

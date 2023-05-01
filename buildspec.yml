@@ -1,0 +1,71 @@
+version: 0.2
+
+env:
+  variables:
+    ENV: "dev"
+  
+  secrets-manager:
+    CLIENT_ID: $SECRET_ARN:client_id
+    CLIENT_SECRET: $SECRET_ARN:client_secret
+    AP_CLIENT_ID: $SECRET_ARN:ap_client_id
+    AP_CLIENT_SECRET: $SECRET_ARN:ap_client_secret
+    NEXUS_PASSWORD: $SECRET_ARN:nexus_ee_password
+    JFROG_TOKEN: $SECRET_ARN:jfrog_token
+    SQUBE_TOKEN: $SECRET_ARN:sonarqube_token
+
+phases:
+  install:
+    runtime-versions:
+      java: openjdk11
+    commands:
+      - cp ./settings.xml /root/.m2/settings.xml
+  
+  pre_build:
+    on-failure: ABORT
+    commands:
+      - echo "Test phase started at $(date)"
+      - echo "Running Munit tests and invoking SonarQube host $SQUBE_HOST at $(date)"
+      - mvn sonar:sonar -Dsonar.login=$SQUBE_TOKEN -Dsonar.host.url=$SQUBE_HOST -Dnexus_password=$NEXUS_PASSWORD
+      # Verify Quality Gate status
+      - SONAR_REPORT=target/sonar/report-task.txt
+      - |
+        if [ -f ${SONAR_REPORT} ]; then
+          PROJECT_KEY=$(grep projectKey ${SONAR_REPORT} | cut -d "=" -f2)
+        else
+          echo "Code quality analysis report ${SONAR_REPORT} not returned from SonarQube.. Aborting.." ; exit 1
+        fi
+      - echo $SQUBE_HOST/api/qualitygates/project_status?projectKey=${PROJECT_KEY}
+      - curl -L -u $SQUBE_TOKEN":" -H "Accept:application/json" -H "content-type:application/json" $SQUBE_HOST/api/qualitygates/project_status?projectKey=${PROJECT_KEY} > qg-status.json
+      # - cat qg-status.json
+      - QG_STATUS=$(jq -r '.projectStatus.status' qg-status.json)
+      - echo Quality Gate Status -> $QG_STATUS
+      - if [ $QG_STATUS = ERROR ] ; then echo Quality Gate check failed; exit 1; fi
+      
+  build:
+    on-failure: ABORT
+    commands:
+      - echo "Build phase started at $(date)"
+      - mvn deploy -DmuleDeploy -DskipMunitTests -Dclient.id=$CLIENT_ID -Dclient.secret=$CLIENT_SECRET -Dnexus_password=$NEXUS_PASSWORD -Denv=$ENV -Dmule.businessGroup="$ORG_NAME" -Danypoint.platform.client.id=$AP_CLIENT_ID -Danypoint.platform.client.secret=$AP_CLIENT_SECRET -Dmule.environment=$MULE_ENVIRONMENT
+  
+  post_build:
+    commands:
+      - echo "Post Build phase started at $(date) for $MULE_ENVIRONMENT"
+      # Deploy artifact to JFrog maven repository for Test env (using Dev for unit testing - change to Test)
+      - |
+        if [ $MULE_ENVIRONMENT = "Test" ] ; then
+          echo "Transferring parent pom to JFrog Maven repository.."
+          echo "Setting version to $PROJECT_VERSION"
+          mvn versions:set -DnewVersion=$PROJECT_VERSION versions:commit 
+          curl -L -u mulesoft-svc-act:"$JFROG_TOKEN" -X PUT $JFROG_HOST/${PROJECT_GROUP}/${REPO_NAME}/parent-pom.xml -T parent-pom.xml
+          echo "Transferring mule app jar to JFrog Maven repository"
+          mvn deploy -DskipMunitTests -Denv=$ENV -Djfrog.password=$JFROG_TOKEN
+        fi
+  
+artifacts:
+  files:
+    - target/*.jar
+  discard-paths: yes
+  
+cache:
+  paths:
+  - '/root/.m2/**/*'
